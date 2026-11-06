@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vinty — Nouvelle annonce</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header id="top"></header>
+<form id="f" class="box" style="margin-top:30px">
+  <h2 data-i18n="new_ad" style="margin:0"></h2>
+  <input name="title" data-ph="title" required maxlength="150">
+  <textarea name="description" data-ph="description" rows="5"></textarea>
+  <input name="price" type="number" min="0" step="1" data-ph="price">
+  <select name="category_id" id="cat" required></select>
+  <select name="city_id" id="city" required></select>
+  <input name="image" type="file" accept="image/jpeg,image/png,image/webp">
+  <button data-i18n="publish"></button>
+  <p class="err" id="err"></p>
+</form>
+<script src="js/common.js"></script>
+<script>
+boot().then(async () => {
+  const [cats, cities] = await Promise.all([API('data.php'), API('data.php?what=cities')]);
+  $('cat').innerHTML = cats.map(c => `<optgroup label="${esc(c.name)}">${c.subs.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</optgroup>`).join('');
+  $('city').innerHTML = cities.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  $('f').onsubmit = async e => {
+    e.preventDefault();
+    const r = await API('ads.php?action=create', { method: 'POST', body: new FormData($('f')) });
+    if (r.id) location = 'ad.html?id=' + r.id; else $('err').textContent = t('error');
+  };
+});
+</script></body></html>

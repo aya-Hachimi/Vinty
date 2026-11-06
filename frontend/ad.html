@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vinty — Annonce</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header id="top"></header>
+<div id="d" class="detail"></div>
+<script src="js/common.js"></script>
+<script>
+boot().then(async () => {
+  const a = await API('ads.php?action=detail&id=' + new URLSearchParams(location.search).get('id'));
+  if (a.error) { $('d').textContent = t('no_results'); return; }
+  $('d').innerHTML = `${a.image ? `<img src="${esc(a.image)}" alt="">` : ''}
+    <h1>${esc(a.title)}</h1><h2>${Number(a.price).toLocaleString()} MAD</h2>
+    <p>${esc(a.category)} · ${esc(a.city)}</p>
+    <p>${esc(a.description).replace(/\n/g, '<br>')}</p>
+    <p>${esc(t('seller'))} : <b>${esc(a.seller)}</b></p>
+    <div class="row"><button id="fav" class="${a.fav == 1 ? 'on' : ''}">♥ ${esc(t('save'))}</button>
+    ${a.mine == 1 ? '' : `<button id="contact">${esc(t('contact'))}</button>`}</div>`;
+  $('fav').onclick = async () => { const r = await post('ads.php?action=fav', { ad_id: a.id }); $('fav').classList.toggle('on', r.fav == 1); };
+  if ($('contact')) $('contact').onclick = async () => {
+    const r = await post('messages.php?action=start', { ad_id: a.id });
+    if (r.id) location = 'messages.html?c=' + r.id;
+  };
+});
+</script></body></html>

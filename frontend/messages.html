@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vinty — Messages</title><link rel="stylesheet" href="css/style.css"></head>
+<body>
+<header id="top"></header>
+<div class="chatwrap">
+  <div id="list"></div>
+  <div class="pane"><div id="msgs"></div>
+    <form id="form" hidden><input id="inp" data-ph="write_msg" autocomplete="off"><button data-i18n="send"></button></form>
+  </div>
+</div>
+<script src="js/common.js"></script>
+<script>
+let cid = 0, last = 0, timer, busy = false;
+boot().then(async () => {
+  const list = await API('messages.php?action=list');
+  $('list').innerHTML = list.map(c => `<div class="conv" data-id="${c.id}"><b>${esc(c.other)}</b><small>${esc(c.title)}</small><span>${esc(c.last || '')}</span></div>`).join('');
+  $('list').onclick = e => { const c = e.target.closest('.conv'); if (c) openConv(c.dataset.id); };
+  const p = new URLSearchParams(location.search).get('c'); if (p) openConv(p);
+});
+function openConv(id) {
+  cid = id; last = 0; $('msgs').innerHTML = ''; $('form').hidden = false;
+  clearInterval(timer); poll(); timer = setInterval(poll, 3000);   // polling : on redemande les nouveaux messages toutes les 3 s
+}
+async function poll() {
+  if (busy) return; busy = true;
+  try {
+    const r = await API(`messages.php?action=fetch&conversation=${cid}&after=${last}`);
+    if (!r.messages) return;
+    r.messages.forEach(m => { last = m.id; $('msgs').insertAdjacentHTML('beforeend', `<div class="m ${m.sender_id == r.me ? 'me' : ''}">${esc(m.content)}</div>`); });
+    if (r.messages.length) $('msgs').scrollTop = 1e9;
+  } finally { busy = false; }
+}
+$('form').onsubmit = async e => {
+  e.preventDefault(); const v = $('inp').value.trim(); if (!v) return;
+  $('inp').value = ''; await post('messages.php?action=send', { conversation: cid, content: v }); poll();
+};
+</script></body></html>
